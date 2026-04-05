@@ -63,13 +63,13 @@ public class AmethystToolCommand extends BukkitCommand {
         }
 
         if (!tierInput.isBlank() && !TIER.contains(tierInput)) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-arg1", "&cPlease enter a valid material.")));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
             return true;
         }
 
         String typeInput = args[1].toLowerCase();
         if (!typeInput.isBlank() && !TYPE.contains(typeInput)) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-arg2", "&cPlease enter a valid tool.")));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-tool", "&cPlease enter a valid tool.")));
             return true;
         }
 
