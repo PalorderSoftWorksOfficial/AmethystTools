@@ -1,32 +1,44 @@
 package com.rtc.amethystTools.command;
 
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.rtc.amethystTools.AmethystTools;
+import com.rtc.amethystTools.utils.ToolUtils;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+@SuppressWarnings({"deprecation", "unused", "SpellCheckingInspection", "SameReturnValue", "UnstableApiUsage"})
+public class AmethystToolsGiveCommand {
 
-@SuppressWarnings({"deprecation", "unused", "FieldCanBeLocal"})
-public class AmethystToolsGiveCommand extends BukkitCommand {
+    private static final List<String> TIER = new ArrayList<>();
+    static {
+        TIER.add("wooden");
+        TIER.add("stone");
+        TIER.add("iron");
+        TIER.add("golden");
+        TIER.add("diamond");
+        TIER.add("netherite");
 
-    private static final List<String> TIER = Arrays.asList(
-            "wooden", "stone", "iron", "golden", "copper", "diamond", "netherite"
-    );
+        if (Material.matchMaterial("COPPER_PICKAXE") != null) {
+            TIER.add("copper");
+        }
+    }
     private static final List<String> TYPE = Arrays.asList(
             "pickaxe", "axe", "shovel"
     );
@@ -34,215 +46,141 @@ public class AmethystToolsGiveCommand extends BukkitCommand {
     private final AmethystTools plugin;
 
     public AmethystToolsGiveCommand(AmethystTools plugin) {
-        super("amethysttoolsgive");
         this.plugin = plugin;
-
-        setDescription("Amethyst tool give command");
-        setUsage("/amethysttoolsgive");
-        setPermission("amethysttools.give");
-        setPermissionMessage("§cYou don't have permission for this command.");
     }
 
-    @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull String @NonNull [] args) {
+    public LiteralArgumentBuilder<CommandSourceStack> register() {
+        return Commands.literal("amethysttoolsgive")
+                .requires(source -> source.getSender().hasPermission("amethysttools.give"))
+                .executes(context -> {
+                    CommandSender sender = context.getSource().getSender();
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.use-give", "&cUse: &7/amethysttoolsgive (player) (tier) (type)")));
+                    if (sender instanceof Player player) {
+                        player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.use-give", "&cUse: &7/amethysttoolsgive (player) (tier) (type)")));
+                    }
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests((context, builder) -> {
+                            String remaining = builder.getRemaining().toLowerCase();
+                            Bukkit.getOnlinePlayers().stream()
+                                    .map(Player::getName)
+                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                    .forEach(builder::suggest);
+                            return builder.buildFuture();
+                        })
+                        .executes(context -> {
+                            CommandSender sender = context.getSource().getSender();
+                            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.enter-tier", "&cPlease enter a tool tier.")));
+                            if (sender instanceof Player player) {
+                                player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.enter-tier", "&cPlease enter a tool tier.")));
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        })
+                        .then(Commands.argument("tier", StringArgumentType.string())
+                                .suggests((context, builder) -> {
+                                    String remaining = builder.getRemaining().toLowerCase();
+                                    TIER.stream().filter(tier -> tier.startsWith(remaining)).forEach(builder::suggest);
+                                    return builder.buildFuture();
+                                })
+                                .executes(context -> {
+                                    CommandSender sender = context.getSource().getSender();
+                                    String tierInput = StringArgumentType.getString(context, "tier").toLowerCase();
 
-        if (args.length == 0) {
-            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.use-give", "&cUse: &7/amethysttoolsgive (player) (tier) (type)")));
-            if (sender instanceof Player player) {
-                player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.use-give", "&cUse: &7/amethysttoolsgive (player) (tier) (type)")));
-            }
-            return true;
-        }
+                                    if (!TIER.contains(tierInput)) {
+                                        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
+                                        if (sender instanceof Player player) {
+                                            player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
+                                        }
+                                    } else {
+                                        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
+                                        if (sender instanceof Player player) {
+                                            player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
+                                        }
+                                    }
+                                    return Command.SINGLE_SUCCESS;
+                                })
+                                .then(Commands.argument("type", StringArgumentType.string())
+                                        .suggests((context, builder) -> {
+                                            String remaining = builder.getRemaining().toLowerCase();
+                                            TYPE.stream().filter(type -> type.startsWith(remaining)).forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(this::executeGive)
+                                )
+                        )
+                );
+    }
 
-        String argplayer = args[0];
-        Player target = Bukkit.getPlayerExact(argplayer);
-        if (target != null) {
+    private int executeGive(CommandContext<CommandSourceStack> context) {
+        CommandSender sender = context.getSource().getSender();
 
-            if (args.length < 2 || args[1].isBlank()) {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.enter-tier", "&cPlease enter a tool tier (wooden, stone, iron, golden, copper, diamond, netherite).")));
-                if (sender instanceof Player player) {
-                    player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.enter-tier", "&cPlease enter a tool tier (wooden, stone, iron, golden, copper, diamond, netherite).")));
-                }
-                return true;
-            }
+        String targetName = StringArgumentType.getString(context, "player");
+        Player target = Bukkit.getPlayerExact(targetName);
 
-            String argtier = args[1].toLowerCase();
-            if (!TIER.contains(argtier)) {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
-                if (sender instanceof Player player) {
-                    player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
-                }
-                return true;
-            }
-
-            if (args.length < 3 || args[2].isBlank()) {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
-                if (sender instanceof Player player) {
-                    player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
-                }
-                return true;
-            }
-
-            String argtype = args[2].toLowerCase();
-            if (!TYPE.contains(argtype)) {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
-                if (sender instanceof Player player) {
-                    player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
-                }
-                return true;
-            }
-
-            if (target.getInventory().firstEmpty() == -1) {
-                String invfullmsgtier = getTierName(argtier);
-                String invfullmsgtool = getTypeName(argtype);
-
-                target.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull", "&c{material} {tool} could not be added to your inventory because it is full.")).replace("{material}", invfullmsgtier).replace("{tool}", invfullmsgtool));
-                target.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull-actionbar", "&cYour inventory is full!")));
-                return true;
-            }
-
-            Material mat = getMaterial(argtier, argtype);
-            if (mat == null) return true;
-
-            ItemStack item = new ItemStack(mat);
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null) return true;
-
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-            pdc.set(AmethystTools.KEY_TOOL, PersistentDataType.BYTE, (byte) 1);
-            pdc.set(AmethystTools.KEY_TIER, PersistentDataType.STRING, argtier);
-            pdc.set(AmethystTools.KEY_TYPE, PersistentDataType.STRING, argtype);
-
-            String toolDisplayName = switch (argtype) {
-                case "pickaxe" -> plugin.getConfig().getString("item.item-pickaxe", "&5ᴘɪᴄᴋᴀхᴇ");
-                case "axe" -> plugin.getConfig().getString("item.item-axe", "&5ᴀхᴇ");
-                case "shovel" -> plugin.getConfig().getString("item.item-shovel", "&5ѕʜᴏᴠᴇʟ");
-                default -> "&cERROR";
-            };
-
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("item.item-name", "&5ᴀᴍᴇᴛʜʏѕᴛ") + " " + toolDisplayName));
-            meta.setLore(List.of("§7Breaks 9 Blocks at Once"));
-            meta.setCustomModelData(2235897);
-            item.setItemMeta(meta);
-
-            Player itemplayer = target.getPlayer();
-
-            if (itemplayer != null) {
-                itemplayer.getInventory().addItem(item);
-                itemplayer.playSound(itemplayer.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 2.0f);
-            } else {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.player-notfound", "&c{player} not found.")).replace("{player}", target.getName()));
-                if (sender instanceof Player player) {
-                    player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.player-notfound-actionbar", "&cPlayer not found")));
-                }
-            }
-            return true;
-        } else {
-            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.player-notfound", "&c{player} not found.")).replace("{player}", argplayer));
+        if (target == null) {
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.player-notfound", "&c{player} not found.").replace("{player}", targetName)));
             if (sender instanceof Player player) {
                 player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.player-notfound-actionbar", "&cPlayer not found")));
             }
-        }
-        return true;
-    }
-
-    private String getTierName(String tier) {
-        return switch (tier) {
-            case "wooden" -> "Wooden";
-            case "stone" -> "Stone";
-            case "iron" -> "Iron";
-            case "copper" -> "Copper";
-            case "diamond" -> "Diamond";
-            case "netherite" -> "Netherite";
-            case "golden" -> "Gold";
-            default -> "(Error Material)";
-        };
-    }
-
-    private String getTypeName(String type) {
-        return switch (type) {
-            case "pickaxe" -> "Pickaxe";
-            case "axe" -> "Axe";
-            case "shovel" -> "Shovel";
-            default -> "(Error Tool)";
-        };
-    }
-
-    @Override
-    public @NonNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String @NonNull [] args) {
-
-        if (args.length == 1) {
-            List<String> completions = new ArrayList<>();
-            String partial = args[0].toLowerCase();
-            for (Player players : Bukkit.getOnlinePlayers()) {
-                String name = players.getName();
-                if (name.startsWith(partial)) completions.add(name);
-            }
-            return completions;
-        } else if (args.length == 2) {
-            List<String> completions = new ArrayList<>();
-            String partial = args[1].toLowerCase();
-            for (String s : TIER) {
-                if (s.startsWith(partial)) completions.add(s);
-            }
-            return completions;
-        } else if (args.length == 3) {
-            List<String> completions = new ArrayList<>();
-            String partial = args[2].toLowerCase();
-            for (String s : TYPE) {
-                if (s.startsWith(partial)) completions.add(s);
-            }
-            return completions;
+            return Command.SINGLE_SUCCESS;
         }
 
-        return Collections.emptyList();
-    }
+        String argtier = StringArgumentType.getString(context, "tier").toLowerCase();
+        String argtype = StringArgumentType.getString(context, "type").toLowerCase();
 
-    private Material getMaterial(String tier, String type) {
-        return switch (tier.toLowerCase()) {
-            case "wooden" -> switch (type) {
-                case "pickaxe" -> Material.WOODEN_PICKAXE;
-                case "axe" -> Material.WOODEN_AXE;
-                case "shovel" -> Material.WOODEN_SHOVEL;
-                default -> null;
-            };
-            case "stone" -> switch (type) {
-                case "pickaxe" -> Material.STONE_PICKAXE;
-                case "axe" -> Material.STONE_AXE;
-                case "shovel" -> Material.STONE_SHOVEL;
-                default -> null;
-            };
-            case "iron" -> switch (type) {
-                case "pickaxe" -> Material.IRON_PICKAXE;
-                case "axe" -> Material.IRON_AXE;
-                case "shovel" -> Material.IRON_SHOVEL;
-                default -> null;
-            };
-            case "copper" -> switch (type) {
-                case "pickaxe" -> Material.COPPER_PICKAXE;
-                case "axe" -> Material.COPPER_AXE;
-                case "shovel" -> Material.COPPER_SHOVEL;
-                default -> null;
-            };
-            case "golden" -> switch (type) {
-                case "pickaxe" -> Material.GOLDEN_PICKAXE;
-                case "axe" -> Material.GOLDEN_AXE;
-                case "shovel" -> Material.GOLDEN_SHOVEL;
-                default -> null;
-            };
-            case "diamond" -> switch (type) {
-                case "pickaxe" -> Material.DIAMOND_PICKAXE;
-                case "axe" -> Material.DIAMOND_AXE;
-                case "shovel" -> Material.DIAMOND_SHOVEL;
-                default -> null;
-            };
-            case "netherite" -> switch (type) {
-                case "pickaxe" -> Material.NETHERITE_PICKAXE;
-                case "axe" -> Material.NETHERITE_AXE;
-                case "shovel" -> Material.NETHERITE_SHOVEL;
-                default -> null;
-            };
-            default -> null;
+        if (!TIER.contains(argtier)) {
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
+            if (sender instanceof Player player) {
+                player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
+            }
+            return Command.SINGLE_SUCCESS;
+        }
+
+        if (!TYPE.contains(argtype)) {
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-tool", "&cPlease enter a valid alet.")));
+            if (sender instanceof Player player) {
+                player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-tool", "&cPlease enter a valid alet.")));
+            }
+            return Command.SINGLE_SUCCESS;
+        }
+
+        if (target.getInventory().firstEmpty() == -1) {
+            String invfullmsgtier = ToolUtils.getTierName(argtier);
+            String invfullmsgtool = ToolUtils.getTypeName(argtype);
+
+            target.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull", "&c{material} {tool} could not be added to your inventory because it is full.")).replace("{material}", invfullmsgtier).replace("{tool}", invfullmsgtool));
+            target.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull-actionbar", "&cYour inventory is full!")));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        Material mat = ToolUtils.getMaterial(argtier, argtype);
+        if (mat == null) return Command.SINGLE_SUCCESS;
+
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return Command.SINGLE_SUCCESS;
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(AmethystTools.KEY_TOOL, PersistentDataType.BYTE, (byte) 1);
+        pdc.set(AmethystTools.KEY_TIER, PersistentDataType.STRING, argtier);
+        pdc.set(AmethystTools.KEY_TYPE, PersistentDataType.STRING, argtype);
+
+        String toolDisplayName = switch (argtype) {
+            case "pickaxe" -> plugin.getConfig().getString("item.item-pickaxe", "&5ᴘɪᴄᴋᴀхᴇ");
+            case "axe" -> plugin.getConfig().getString("item.item-axe", "&5ᴀхᴇ");
+            case "shovel" -> plugin.getConfig().getString("item.item-shovel", "&5ѕʜᴏᴠᴇʟ");
+            default -> "&cERROR";
         };
+
+        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("item.item-name", "&5ᴀᴍᴇᴛʜʏѕᴛ") + " " + toolDisplayName));
+        meta.setLore(List.of("§7Breaks 9 Blocks at Once"));
+        meta.setCustomModelData(2235897);
+        item.setItemMeta(meta);
+
+        target.getInventory().addItem(item);
+        target.playSound(target.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 2.0f);
+
+        return Command.SINGLE_SUCCESS;
     }
 }

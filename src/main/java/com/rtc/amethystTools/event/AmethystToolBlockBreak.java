@@ -13,10 +13,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
-import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 
-@SuppressWarnings({"FieldCanBeLocal", "unused", "RedundantIfStatement", "deprecation"})
+@SuppressWarnings({"FieldCanBeLocal", "unused", "RedundantIfStatement"})
 public class AmethystToolBlockBreak implements Listener {
 
     private final AmethystTools plugin;
@@ -25,8 +25,59 @@ public class AmethystToolBlockBreak implements Listener {
         this.plugin = plugin;
     }
 
-    private static final Set<Material> BLACKLIST = EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST, Material.SHULKER_BOX, Material.BLACK_SHULKER_BOX, Material.BLUE_SHULKER_BOX, Material.BROWN_SHULKER_BOX, Material.CYAN_SHULKER_BOX, Material.GRAY_SHULKER_BOX, Material.GREEN_SHULKER_BOX, Material.LIGHT_BLUE_SHULKER_BOX, Material.LIGHT_GRAY_SHULKER_BOX, Material.LIME_SHULKER_BOX, Material.MAGENTA_SHULKER_BOX, Material.ORANGE_SHULKER_BOX, Material.PINK_SHULKER_BOX, Material.PURPLE_SHULKER_BOX, Material.RED_SHULKER_BOX, Material.WHITE_SHULKER_BOX, Material.YELLOW_SHULKER_BOX, Material.BEDROCK, Material.OBSIDIAN, Material.CRYING_OBSIDIAN, Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK, Material.REPEATING_COMMAND_BLOCK, Material.COPPER_CHEST, Material.EXPOSED_COPPER_CHEST, Material.WEATHERED_COPPER_CHEST, Material.OXIDIZED_COPPER_CHEST, Material.WAXED_COPPER_CHEST, Material.WAXED_EXPOSED_COPPER_CHEST, Material.WAXED_WEATHERED_COPPER_CHEST, Material.WAXED_OXIDIZED_COPPER_CHEST
-    );
+    private static final Set<Material> BLACKLIST = new HashSet<>();
+
+    static {
+
+        add("CHEST");
+        add("TRAPPED_CHEST");
+
+        add("SHULKER_BOX");
+        add("BLACK_SHULKER_BOX");
+        add("BLUE_SHULKER_BOX");
+        add("BROWN_SHULKER_BOX");
+        add("CYAN_SHULKER_BOX");
+        add("GRAY_SHULKER_BOX");
+        add("GREEN_SHULKER_BOX");
+        add("LIGHT_BLUE_SHULKER_BOX");
+        add("LIGHT_GRAY_SHULKER_BOX");
+        add("LIME_SHULKER_BOX");
+        add("MAGENTA_SHULKER_BOX");
+        add("ORANGE_SHULKER_BOX");
+        add("PINK_SHULKER_BOX");
+        add("PURPLE_SHULKER_BOX");
+        add("RED_SHULKER_BOX");
+        add("WHITE_SHULKER_BOX");
+        add("YELLOW_SHULKER_BOX");
+
+        add("BEDROCK");
+        add("OBSIDIAN");
+        add("CRYING_OBSIDIAN");
+
+        add("COMMAND_BLOCK");
+        add("CHAIN_COMMAND_BLOCK");
+        add("REPEATING_COMMAND_BLOCK");
+
+        // 1.21.9+
+        add("COPPER_CHEST");
+        add("EXPOSED_COPPER_CHEST");
+        add("WEATHERED_COPPER_CHEST");
+        add("OXIDIZED_COPPER_CHEST");
+
+        add("WAXED_COPPER_CHEST");
+        add("WAXED_EXPOSED_COPPER_CHEST");
+        add("WAXED_WEATHERED_COPPER_CHEST");
+        add("WAXED_OXIDIZED_COPPER_CHEST");
+    }
+
+    private static void add(String materialName) {
+
+        Material material = Material.matchMaterial(materialName);
+
+        if (material != null) {
+            BLACKLIST.add(material);
+        }
+    }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {

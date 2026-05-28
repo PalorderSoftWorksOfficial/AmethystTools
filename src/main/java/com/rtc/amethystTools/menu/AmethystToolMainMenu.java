@@ -1,6 +1,7 @@
 package com.rtc.amethystTools.menu;
 
 import com.rtc.amethystTools.AmethystTools;
+import com.rtc.amethystTools.utils.ToolUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,11 +13,12 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import com.rtc.amethystTools.utils.VersionUtil;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@SuppressWarnings({"deprecation", "unused", "ClassCanBeRecord", "FieldCanBeLocal"})
+@SuppressWarnings({"deprecation", "unused", "ClassCanBeRecord", "FieldCanBeLocal", "SpellCheckingInspection"})
 public class AmethystToolMainMenu implements Listener {
 
     private final AmethystTools plugin;
@@ -38,13 +40,22 @@ public class AmethystToolMainMenu implements Listener {
         String MENU_TITLE = plugin.getConfig().getString("menus.menu-main", "&5Amethyst Tools");
         Inventory inv = Bukkit.createInventory(new MainMenuHolder(), size, color(MENU_TITLE));
 
+        boolean hasCopper = VersionUtil.isAtLeast("1.21.9");
+
         inv.setItem(10, buildWoodenCategory(player));
         inv.setItem(11, buildStoneCategory(player));
         inv.setItem(12, buildIronCategory(player));
-        inv.setItem(13, buildCopperCategory(player));
-        inv.setItem(14, buildGoldCategory(player));
-        inv.setItem(15, buildDiamondCategory(player));
-        inv.setItem(16, buildNetheriteCategory(player));
+
+        if (hasCopper) {
+            inv.setItem(13, buildCopperCategory(player));
+            inv.setItem(14, buildGoldCategory(player));
+            inv.setItem(15, buildDiamondCategory(player));
+            inv.setItem(16, buildNetheriteCategory(player));
+        } else {
+            inv.setItem(13, buildGoldCategory(player));
+            inv.setItem(14, buildDiamondCategory(player));
+            inv.setItem(15, buildNetheriteCategory(player));
+        }
 
         return inv;
     }
@@ -160,14 +171,31 @@ public class AmethystToolMainMenu implements Listener {
 
         event.setCancelled(true);
 
+        boolean hasCopper = ToolUtils.hasCopperTools();
         switch (event.getSlot()) {
-            case 10 -> player.openInventory(new AmethystToolWoodenMenu(plugin).create(player));
-            case 11 -> player.openInventory(new AmethystToolStoneMenu(plugin).create(player));
-            case 12 -> player.openInventory(new AmethystToolIronMenu(plugin).create(player));
-            case 13 -> player.openInventory(new AmethystToolCopperMenu(plugin).create(player));
-            case 14 -> player.openInventory(new AmethystToolGoldenMenu(plugin).create(player));
-            case 15 -> player.openInventory(new AmethystToolDiamondMenu(plugin).create(player));
-            case 16 -> player.openInventory(new AmethystToolNetheriteMenu(plugin).create(player));
+
+            case 10 -> open(MenuType.WOODEN, player);
+            case 11 -> open(MenuType.STONE, player);
+            case 12 -> open(MenuType.IRON, player);
+
+            case 13 -> {
+                if (hasCopper) open(MenuType.COPPER, player);
+                else open(MenuType.GOLD, player);
+            }
+
+            case 14 -> {
+                if (hasCopper) open(MenuType.GOLD, player);
+                else open(MenuType.DIAMOND, player);
+            }
+
+            case 15 -> {
+                if (hasCopper) open(MenuType.DIAMOND, player);
+                else open(MenuType.NETHERITE, player);
+            }
+
+            case 16 -> {
+                if (hasCopper) open(MenuType.NETHERITE, player);
+            }
         }
     }
 
@@ -183,4 +211,20 @@ public class AmethystToolMainMenu implements Listener {
         }
         return ChatColor.translateAlternateColorCodes('&', text);
     }
+
+    private void open(MenuType type, Player player) {
+
+        switch (type) {
+
+            case WOODEN -> player.openInventory(new AmethystToolWoodenMenu(plugin).create(player));
+            case STONE -> player.openInventory(new AmethystToolStoneMenu(plugin).create(player));
+            case IRON -> player.openInventory(new AmethystToolIronMenu(plugin).create(player));
+            case COPPER -> player.openInventory(new AmethystToolCopperMenu(plugin).create(player));
+            case GOLD -> player.openInventory(new AmethystToolGoldenMenu(plugin).create(player));
+            case DIAMOND -> player.openInventory(new AmethystToolDiamondMenu(plugin).create(player));
+            case NETHERITE -> player.openInventory(new AmethystToolNetheriteMenu(plugin).create(player));
+        }
+    }
+
+    public enum MenuType {WOODEN, STONE, IRON, COPPER, GOLD, DIAMOND, NETHERITE}
 }

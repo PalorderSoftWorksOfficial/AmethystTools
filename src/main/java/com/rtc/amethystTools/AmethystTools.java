@@ -9,6 +9,7 @@ import com.rtc.amethystTools.listener.AnvilListener;
 import com.rtc.amethystTools.listener.GrindstoneListener;
 import com.rtc.amethystTools.menu.*;
 import com.rtc.amethystTools.utils.UpdateChecker;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -20,7 +21,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-@SuppressWarnings({"unused", "deprecation"})
+import java.util.List;
+
+@SuppressWarnings({"unused", "deprecation", "UnstableApiUsage", "SpellCheckingInspection"})
 public final class AmethystTools extends JavaPlugin implements Listener {
 
     public UpdateChecker updateChecker;
@@ -70,9 +73,19 @@ public final class AmethystTools extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new AmethystToolHoldSound(this), this);
         getServer().getPluginManager().registerEvents(new AmethystToolBlockBreak(this), this);
 
-        this.getServer().getCommandMap().register("amethysttools", new AmethystToolCommand(this));
-        this.getServer().getCommandMap().register("amethysttoolsgive", new AmethystToolsGiveCommand(this));
-        this.getServer().getCommandMap().register("amethysttoolsreload", new AmethystToolReloadCommand(this));
+        this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            var commands = event.registrar();
+
+            var mainCommandNode = new AmethystToolCommand(this).register().build();
+            commands.register(mainCommandNode, "AmethystTools Command", List.of());
+
+            var reloadCommandNode = new AmethystToolReloadCommand(this).register().build();
+            commands.register(reloadCommandNode, "AmethystTools Reload Command", List.of());
+
+            var giveCommandNode = new AmethystToolsGiveCommand(this).register().build();
+            commands.register(giveCommandNode, "AmethystTools Give Command", List.of());
+        });
+
 
         getServer().getPluginManager().registerEvents(new AnvilListener(), this);
         getServer().getPluginManager().registerEvents(new GrindstoneListener(), this);

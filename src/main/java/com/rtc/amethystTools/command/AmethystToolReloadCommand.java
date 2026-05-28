@@ -1,47 +1,46 @@
 package com.rtc.amethystTools.command;
 
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.rtc.amethystTools.AmethystTools;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
-
-@SuppressWarnings({"deprecation", "unused", "FieldCanBeLocal"})
-public class AmethystToolReloadCommand extends BukkitCommand {
+@SuppressWarnings({"deprecation", "unused", "SpellCheckingInspection"})
+public class AmethystToolReloadCommand {
 
     private final AmethystTools plugin;
 
     public AmethystToolReloadCommand(AmethystTools plugin) {
-        super("amethysttoolsreload");
         this.plugin = plugin;
-        setDescription("Reload plugin config");
-        setUsage("/amethysttoolsreload");
-        setPermission("amethysttools.admin");
     }
 
-    @Override
-    public boolean execute(@NotNull CommandSender commandSender, @NotNull String s, @NotNull String @NotNull [] strings) {
-        Player player = (Player) commandSender;
-        if (commandSender.hasPermission("amethysttools.admin")) {
-            plugin.reloadConfig();
+    @SuppressWarnings("UnstableApiUsage")
+    public LiteralArgumentBuilder<CommandSourceStack> register() {
+        return Commands.literal("amethysttoolsreload")
+                .requires(source -> source.getSender().hasPermission("amethysttools.admin"))
+                .executes(this::executeReload);
+    }
+
+
+    @SuppressWarnings("UnstableApiUsage")
+    private int executeReload(CommandContext<CommandSourceStack> context) {
+        CommandSender sender = context.getSource().getSender();
+
+        plugin.reloadConfig();
+
+        if (sender instanceof Player player) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.reloadplugin", "&aPlugin reload is succesfuly complete.")));
             player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.reloadplugin-actionbar", "&aReloaded Plugin")));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
         } else {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.nopermission", "&cYou don't have permission!")));
-            player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.nopermission-actionbar", "&cYou don't have permission!")));
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 1.0f);
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.reloadplugin", "&aPlugin reload is succesfuly complete.")));
         }
-        return true;
-    }
-
-    @Override
-    public @NotNull List<String> tabComplete(@NotNull CommandSender commandSender, @NotNull String s, @NotNull String @NotNull [] strings) {
-        return Collections.emptyList();
+        return Command.SINGLE_SUCCESS;
     }
 }

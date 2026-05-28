@@ -1,31 +1,44 @@
 package com.rtc.amethystTools.command;
 
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.rtc.amethystTools.AmethystTools;
 import com.rtc.amethystTools.menu.AmethystToolMainMenu;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
+import com.rtc.amethystTools.utils.ToolUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-@SuppressWarnings({"deprecation", "unused", "FieldCanBeLocal"})
-public class AmethystToolCommand extends BukkitCommand {
+@SuppressWarnings({"deprecation", "unused", "SameReturnValue", "SpellCheckingInspection", "UnstableApiUsage"})
+public class AmethystToolCommand {
 
-    private static final List<String> TIER = Arrays.asList(
-            "wooden", "stone", "iron", "golden", "copper", "diamond", "netherite"
-    );
+    private static final List<String> TIER = new ArrayList<>();
+    static {
+        TIER.add("wooden");
+        TIER.add("stone");
+        TIER.add("iron");
+        TIER.add("golden");
+        TIER.add("diamond");
+        TIER.add("netherite");
+
+        if (Material.matchMaterial("COPPER_PICKAXE") != null) {
+            TIER.add("copper");
+        }
+    }
+
     private static final List<String> TYPE = Arrays.asList(
             "pickaxe", "axe", "shovel"
     );
@@ -33,61 +46,91 @@ public class AmethystToolCommand extends BukkitCommand {
     private final AmethystTools plugin;
 
     public AmethystToolCommand(AmethystTools plugin) {
-        super("amethysttools");
         this.plugin = plugin;
-
-        setDescription("Amethyst tool command");
-        setUsage("/amethysttools");
-        setPermission("amethysttools.give");
-        setPermissionMessage("§cYou don't have permission for this command.");
     }
 
-    @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull String @NonNull [] args) {
+    @SuppressWarnings("UnstableApiUsage")
+    public LiteralArgumentBuilder<CommandSourceStack> register() {
+        return Commands.literal("amethysttools")
+                .requires(source -> source.getSender().hasPermission("amethysttools.give"))
+                .executes(this::openMenu)
 
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.only-players", "&cOnly players can use this command.")));
-            return true;
-        }
+                .then(Commands.argument("tier", StringArgumentType.string())
+                        .suggests((context, builder) -> {
+                            String remaining = builder.getRemaining().toLowerCase();
+                            TIER.stream()
+                                    .filter(tier -> tier.startsWith(remaining))
+                                    .forEach(builder::suggest);
+                            return builder.buildFuture();
+                        })
+                        .executes(context -> {
+                            Player player = getPlayerOrSendError(context);
+                            if (player == null) return Command.SINGLE_SUCCESS;
 
-        if (args.length == 0) {
-            player.openInventory(new AmethystToolMainMenu(plugin).create(player));
-            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0F, 1.0F);
-            return true;
-        }
+                            String tierInput = StringArgumentType.getString(context, "tier").toLowerCase();
+                            if (TIER.contains(tierInput)) {
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
+                            } else {
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        })
 
-        String tierInput = args[0].toLowerCase();
-        if (args.length == 1 && TIER.contains(tierInput)) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.empty-arg2", "&cPlease enter a tool type (pickaxe, axe, shovel).")));
-            return true;
-        }
+                        .then(Commands.argument("type", StringArgumentType.string())
+                                .suggests((context, builder) -> {
+                                    String remaining = builder.getRemaining().toLowerCase();
+                                    TYPE.stream()
+                                            .filter(type -> type.startsWith(remaining))
+                                            .forEach(builder::suggest);
+                                    return builder.buildFuture();
+                                })
+                                .executes(this::giveTool)
+                        )
+                );
+    }
 
-        if (!tierInput.isBlank() && !TIER.contains(tierInput)) {
+    @SuppressWarnings("SameReturnValue")
+    private int openMenu(CommandContext<CommandSourceStack> context) {
+        Player player = getPlayerOrSendError(context);
+        if (player == null) return Command.SINGLE_SUCCESS;
+
+        player.openInventory(new AmethystToolMainMenu(plugin).create(player));
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0F, 1.0F);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int giveTool(CommandContext<CommandSourceStack> context) {
+        Player player = getPlayerOrSendError(context);
+        if (player == null) return Command.SINGLE_SUCCESS;
+
+        String tierInput = StringArgumentType.getString(context, "tier").toLowerCase();
+        String typeInput = StringArgumentType.getString(context, "type").toLowerCase();
+
+        if (!TIER.contains(tierInput)) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-material", "&cPlease enter a valid material.")));
-            return true;
+            return Command.SINGLE_SUCCESS;
         }
 
-        String typeInput = args[1].toLowerCase();
-        if (!typeInput.isBlank() && !TYPE.contains(typeInput)) {
+        if (!TYPE.contains(typeInput)) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.wrong-tool", "&cPlease enter a valid tool.")));
-            return true;
+            return Command.SINGLE_SUCCESS;
         }
 
         if (player.getInventory().firstEmpty() == -1) {
-            String invfullmsgtier = getTierName(tierInput);
-            String invfullmsgtool = getTypeName(typeInput);
+            String invfullmsgtier = ToolUtils.getTierName(tierInput);
+            String invfullmsgtool = ToolUtils.getTypeName(typeInput);
 
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull", "&c{material} {tool} could not be added to your inventory because it is full.")).replace("{material}", invfullmsgtier).replace("{tool}", invfullmsgtool));
             player.sendActionBar(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.invfull-actionbar", "&cYour inventory is full!")));
-            return true;
+            return Command.SINGLE_SUCCESS;
         }
 
-        Material mat = getMaterial(tierInput, typeInput);
-        if (mat == null) return true;
+        Material mat = ToolUtils.getMaterial(tierInput, typeInput);
+        if (mat == null) return Command.SINGLE_SUCCESS;
 
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) return true;
+        if (meta == null) return Command.SINGLE_SUCCESS;
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(AmethystTools.KEY_TOOL, PersistentDataType.BYTE, (byte) 1);
@@ -109,96 +152,14 @@ public class AmethystToolCommand extends BukkitCommand {
         player.getInventory().addItem(item);
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 2.0f);
 
-        return true;
+        return Command.SINGLE_SUCCESS;
     }
 
-    private String getTierName(String tier) {
-        return switch (tier) {
-            case "wooden" -> "Wooden";
-            case "stone" -> "Stone";
-            case "iron" -> "Iron";
-            case "copper" -> "Copper";
-            case "diamond" -> "Diamond";
-            case "netherite" -> "Netherite";
-            case "golden" -> "Gold";
-            default -> "(Error Material)";
-        };
-    }
-
-    private String getTypeName(String type) {
-        return switch (type) {
-            case "pickaxe" -> "Pickaxe";
-            case "axe" -> "Axe";
-            case "shovel" -> "Shovel";
-            default -> "(Error Tool)";
-        };
-    }
-
-    @Override
-    public @NonNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String @NonNull [] args) {
-        if (args.length == 1) {
-            List<String> completions = new ArrayList<>();
-            String partial = args[0].toLowerCase();
-            for (String s : TIER) {
-                if (s.startsWith(partial)) completions.add(s);
-            }
-            return completions;
-        } else if (args.length == 2) {
-            List<String> completions = new ArrayList<>();
-            String partial = args[1].toLowerCase();
-            for (String s : TYPE) {
-                if (s.startsWith(partial)) completions.add(s);
-            }
-            return completions;
+    private Player getPlayerOrSendError(CommandContext<CommandSourceStack> context) {
+        if (!(context.getSource().getSender() instanceof Player player)) {
+            context.getSource().getSender().sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.only-players", "&cOnly players can use this command.")));
+            return null;
         }
-        return Collections.emptyList();
-    }
-
-    private Material getMaterial(String tier, String type) {
-        return switch (tier.toLowerCase()) {
-            case "wooden" -> switch (type) {
-                case "pickaxe" -> Material.WOODEN_PICKAXE;
-                case "axe" -> Material.WOODEN_AXE;
-                case "shovel" -> Material.WOODEN_SHOVEL;
-                default -> null;
-            };
-            case "stone" -> switch (type) {
-                case "pickaxe" -> Material.STONE_PICKAXE;
-                case "axe" -> Material.STONE_AXE;
-                case "shovel" -> Material.STONE_SHOVEL;
-                default -> null;
-            };
-            case "iron" -> switch (type) {
-                case "pickaxe" -> Material.IRON_PICKAXE;
-                case "axe" -> Material.IRON_AXE;
-                case "shovel" -> Material.IRON_SHOVEL;
-                default -> null;
-            };
-            case "copper" -> switch (type) {
-                case "pickaxe" -> Material.COPPER_PICKAXE;
-                case "axe" -> Material.COPPER_AXE;
-                case "shovel" -> Material.COPPER_SHOVEL;
-                default -> null;
-            };
-            case "golden" -> switch (type) {
-                case "pickaxe" -> Material.GOLDEN_PICKAXE;
-                case "axe" -> Material.GOLDEN_AXE;
-                case "shovel" -> Material.GOLDEN_SHOVEL;
-                default -> null;
-            };
-            case "diamond" -> switch (type) {
-                case "pickaxe" -> Material.DIAMOND_PICKAXE;
-                case "axe" -> Material.DIAMOND_AXE;
-                case "shovel" -> Material.DIAMOND_SHOVEL;
-                default -> null;
-            };
-            case "netherite" -> switch (type) {
-                case "pickaxe" -> Material.NETHERITE_PICKAXE;
-                case "axe" -> Material.NETHERITE_AXE;
-                case "shovel" -> Material.NETHERITE_SHOVEL;
-                default -> null;
-            };
-            default -> null;
-        };
+        return player;
     }
 }

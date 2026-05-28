@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@SuppressWarnings({"deprecation", "unused", "ClassCanBeRecord", "FieldCanBeLocal"})
+@SuppressWarnings({"deprecation", "unused", "ClassCanBeRecord", "FieldCanBeLocal", "DataFlowIssue", "SpellCheckingInspection"})
 public class AmethystToolCopperMenu implements Listener {
 
     private final AmethystTools plugin;
@@ -51,7 +51,7 @@ public class AmethystToolCopperMenu implements Listener {
 
     private ItemStack buildPickaxe(Player player) {
 
-        Material material = Material.valueOf(String.valueOf(Material.COPPER_PICKAXE));
+        Material material = Material.matchMaterial("COPPER_PICKAXE");
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -73,7 +73,7 @@ public class AmethystToolCopperMenu implements Listener {
 
     private ItemStack buildShovel(Player player) {
 
-        Material material = Material.valueOf(String.valueOf(Material.COPPER_SHOVEL));
+        Material material = Material.matchMaterial("COPPER_SHOVEL");
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -95,7 +95,7 @@ public class AmethystToolCopperMenu implements Listener {
 
     private ItemStack buildAxe(Player player) {
 
-        Material material = Material.valueOf(String.valueOf(Material.COPPER_AXE));
+        Material material = Material.matchMaterial("COPPER_AXE");
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();

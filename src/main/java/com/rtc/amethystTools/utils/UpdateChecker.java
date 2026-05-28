@@ -3,6 +3,7 @@ package com.rtc.amethystTools.utils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -25,39 +26,48 @@ public class UpdateChecker implements Listener {
     }
 
     public void check() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    URL url = new URL("https://api.modrinth.com/v2/project/YTkZHbOm/version");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
 
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                    reader.close();
-
-                    JsonArray array = JsonParser.parseString(response.toString()).getAsJsonArray();
-
-                    if (array.isEmpty()) return;
-
-                    JsonElement first = array.get(0);
-                    latestVersion = first.getAsJsonObject().get("version_number").getAsString();
-
-                    if (isUpdateAvailable(currentVersion, latestVersion)) {
-                        plugin.getLogger().warning("There is a newer plugin version available: " + latestVersion + ", you're on: " + currentVersion);
-                        plugin.getLogger().warning("Go to its page to download: §ahttps://modrinth.com/plugin/amethystools/versions");
-                    }
-
-                } catch (Exception e) {
-                    plugin.getLogger().warning("An error occurred during the UpdateChecker check!");
+        if (isFolia()) {
+            Bukkit.getGlobalRegionScheduler().run(plugin, task -> runCheck());
+        } else {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    runCheck();
                 }
+            }.runTaskAsynchronously(plugin);
+        }
+    }
+
+    public void runCheck() {
+        try {
+            URL url = new URL("https://api.modrinth.com/v2/project/YTkZHbOm/version");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
             }
-        }.runTaskAsynchronously(plugin);
+            reader.close();
+
+            JsonArray array = JsonParser.parseString(response.toString()).getAsJsonArray();
+
+            if (array.isEmpty()) return;
+
+            JsonElement first = array.get(0);
+            latestVersion = first.getAsJsonObject().get("version_number").getAsString();
+
+            if (isUpdateAvailable(currentVersion, latestVersion)) {
+                plugin.getLogger().warning("There is a newer plugin version available: " + latestVersion + ", you're on: " + currentVersion);
+                plugin.getLogger().warning("Go to its page to download: §ahttps://modrinth.com/plugin/amethystools/versions");
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().warning("An error occurred during the UpdateChecker check!");
+        }
     }
 
     public boolean isUpdateAvailable(String current, String latest) {
@@ -74,5 +84,14 @@ public class UpdateChecker implements Listener {
             if (lat < cur) return false;
         }
         return false;
+    }
+
+    private boolean isFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

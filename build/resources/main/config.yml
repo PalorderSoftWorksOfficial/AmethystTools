@@ -9,10 +9,10 @@ messages:
   reloadplugin-actionbar: "&aReloaded Plugin"
   nopermission: "&cYou don't have permission!"
   nopermission-actionbar: "&cYou don't have permission!"
-  use-give: "&cUse: &7/amethysttoolsgive (player) (tier) (type)"
+  use-give: "&cUse: &7/amethysttoolsgive <player> <tier> <type>"
   player-notfound: "&c{player} not found."
   player-notfound-actionbar: "&cPlayer not found"
-  enter-tier: "&cPlease enter a tool tier (wooden, stone, iron, golden, copper, diamond, netherite)."
+  enter-tier: "&cPlease enter a tool tier."
 
 item:
   item-name: "&5ᴀᴍᴇᴛʜʏѕᴛ"
@@ -25,7 +25,7 @@ menus:
   menu-wooden: "&#A0522DWooden Tools"
   menu-stone: "&#7D7D7DStone Tools"
   menu-iron: "&#DADADAIron Tools"
-  menu-copper: "&#C87533Copper Tools"
+  menu-copper: "&#C87533Copper Tools" # Only 1.21.9+
   menu-golden: "&#FFD700Golden Tools"
   menu-diamond: "&#4EE1D8Diamond Tools"
   menu-netherite: "&#2B2B2FNetherite Tools"
