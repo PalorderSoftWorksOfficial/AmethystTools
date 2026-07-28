@@ -71,6 +71,7 @@ public final class AmethystToolsFabric implements ModInitializer {
 
         dispatcher.register(literal("amethysttoolsgive")
                 .requires(source -> source.hasPermissionLevel(2))
+                .executes(AmethystToolsFabric::showGiveUsage)
                 .then(argument("player", StringArgumentType.word())
                         .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(player -> player.getGameProfile().getName()).toList(), builder))
                         .executes(AmethystToolsFabric::needTierForTarget)
@@ -80,6 +81,12 @@ public final class AmethystToolsFabric implements ModInitializer {
                                 .then(argument("type", StringArgumentType.word())
                                         .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
                                         .executes(AmethystToolsFabric::giveTargetCommand)))));
+    }
+
+    private static int showGiveUsage(CommandContext<ServerCommandSource> context) {
+        String text = message("messages.use-give", "Use: /amethysttoolsgive <player> <tier> <type>");
+        sendChatAndActionBar(context.getSource(), text, true);
+        return 1;
     }
 
     private static int openMenuCommand(CommandContext<ServerCommandSource> context) {
