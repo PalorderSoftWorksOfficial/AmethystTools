@@ -2,11 +2,11 @@ package com.rtc.amethystTools;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.StringArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
@@ -34,11 +34,11 @@ public final class AmethystToolsFabric implements ModInitializer {
     private static void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(literal("amethysttools")
                 .executes(AmethystToolsFabric::openRootCommand)
-                .then(argument("tier", net.minecraft.command.argument.StringArgumentType.word())
-                        .suggests((context, builder) -> suggest(builder, ToolDefinitions.tierIds()))
+                .then(argument("tier", StringArgumentType.word())
+                        .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.tierIds(), builder))
                         .executes(AmethystToolsFabric::tierOnlyCommand)
-                        .then(argument("type", net.minecraft.command.argument.StringArgumentType.word())
-                                .suggests((context, builder) -> suggest(builder, ToolDefinitions.typeIds()))
+                        .then(argument("type", StringArgumentType.word())
+                                .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
                                 .executes(AmethystToolsFabric::giveSelfCommand))));
 
         dispatcher.register(literal("amethysttoolsreload")
@@ -47,14 +47,14 @@ public final class AmethystToolsFabric implements ModInitializer {
 
         dispatcher.register(literal("amethysttoolsgive")
                 .requires(source -> source.hasPermissionLevel(2))
-                .then(argument("player", net.minecraft.command.argument.StringArgumentType.word())
-                        .suggests((context, builder) -> suggest(builder, context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(player -> player.getGameProfile().getName()).toList()))
+                .then(argument("player", StringArgumentType.word())
+                        .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(player -> player.getGameProfile().getName()).toList(), builder))
                         .executes(AmethystToolsFabric::needTierForTarget)
-                        .then(argument("tier", net.minecraft.command.argument.StringArgumentType.word())
-                                .suggests((context, builder) -> suggest(builder, ToolDefinitions.tierIds()))
+                        .then(argument("tier", StringArgumentType.word())
+                                .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.tierIds(), builder))
                                 .executes(AmethystToolsFabric::needTypeForTarget)
-                                .then(argument("type", net.minecraft.command.argument.StringArgumentType.word())
-                                        .suggests((context, builder) -> suggest(builder, ToolDefinitions.typeIds()))
+                                .then(argument("type", StringArgumentType.word())
+                                        .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
                                         .executes(AmethystToolsFabric::giveTargetCommand)))));
     }
 
@@ -75,7 +75,7 @@ public final class AmethystToolsFabric implements ModInitializer {
             return 0;
         }
 
-        ToolDefinitions.Tier tier = parseTier(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "tier"));
+        ToolDefinitions.Tier tier = parseTier(StringArgumentType.getString(context, "tier"));
         if (tier == null) {
             sendError(context.getSource(), message("messages.wrong-material", "Please enter a valid material."));
             return 0;
@@ -91,13 +91,13 @@ public final class AmethystToolsFabric implements ModInitializer {
             return 0;
         }
 
-        ToolDefinitions.Tier tier = parseTier(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "tier"));
+        ToolDefinitions.Tier tier = parseTier(StringArgumentType.getString(context, "tier"));
         if (tier == null) {
             sendError(context.getSource(), message("messages.wrong-material", "Please enter a valid material."));
             return 0;
         }
 
-        ToolDefinitions.Type type = parseType(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "type"));
+        ToolDefinitions.Type type = parseType(StringArgumentType.getString(context, "type"));
         if (type == null) {
             sendError(context.getSource(), message("messages.wrong-tool", "Please enter a valid tool."));
             return 0;
@@ -122,9 +122,10 @@ public final class AmethystToolsFabric implements ModInitializer {
     }
 
     private static int needTierForTarget(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity target = resolveTarget(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "player"));
+        String playerName = StringArgumentType.getString(context, "player");
+        ServerPlayerEntity target = resolveTarget(context.getSource(), playerName);
         if (target == null) {
-            sendError(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", net.minecraft.command.argument.StringArgumentType.getString(context, "player")));
+            sendError(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", playerName));
             return 0;
         }
 
@@ -133,13 +134,14 @@ public final class AmethystToolsFabric implements ModInitializer {
     }
 
     private static int needTypeForTarget(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity target = resolveTarget(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "player"));
+        String playerName = StringArgumentType.getString(context, "player");
+        ServerPlayerEntity target = resolveTarget(context.getSource(), playerName);
         if (target == null) {
-            sendError(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", net.minecraft.command.argument.StringArgumentType.getString(context, "player")));
+            sendError(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", playerName));
             return 0;
         }
 
-        ToolDefinitions.Tier tier = parseTier(context.getSource(), net.minecraft.command.argument.StringArgumentType.getString(context, "tier"));
+        ToolDefinitions.Tier tier = parseTier(StringArgumentType.getString(context, "tier"));
         if (tier == null) {
             sendError(context.getSource(), message("messages.wrong-material", "Please enter a valid material."));
             return 0;
@@ -151,20 +153,20 @@ public final class AmethystToolsFabric implements ModInitializer {
 
     private static int giveTargetCommand(CommandContext<ServerCommandSource> context) {
         ServerCommandSource source = context.getSource();
-        String playerName = net.minecraft.command.argument.StringArgumentType.getString(context, "player");
+        String playerName = StringArgumentType.getString(context, "player");
         ServerPlayerEntity target = resolveTarget(source, playerName);
         if (target == null) {
             sendError(source, format(message("messages.player-notfound", "{player} not found."), "", "", playerName));
             return 0;
         }
 
-        ToolDefinitions.Tier tier = parseTier(source, net.minecraft.command.argument.StringArgumentType.getString(context, "tier"));
+        ToolDefinitions.Tier tier = parseTier(StringArgumentType.getString(context, "tier"));
         if (tier == null) {
             sendError(source, message("messages.wrong-material", "Please enter a valid material."));
             return 0;
         }
 
-        ToolDefinitions.Type type = parseType(source, net.minecraft.command.argument.StringArgumentType.getString(context, "type"));
+        ToolDefinitions.Type type = parseType(StringArgumentType.getString(context, "type"));
         if (type == null) {
             sendError(source, message("messages.wrong-tool", "Please enter a valid tool."));
             return 0;
@@ -174,7 +176,7 @@ public final class AmethystToolsFabric implements ModInitializer {
             return 0;
         }
 
-        sendFeedback(source, message("messages.reloadplugin", "Tool given."));
+        sendFeedback(source, message("messages.toolgiven", "Tool given."));
         return 1;
     }
 
@@ -211,11 +213,11 @@ public final class AmethystToolsFabric implements ModInitializer {
         return source.getServer().getPlayerManager().getPlayer(playerName);
     }
 
-    private static ToolDefinitions.Tier parseTier(ServerCommandSource source, String raw) {
+    private static ToolDefinitions.Tier parseTier(String raw) {
         return ToolDefinitions.Tier.fromId(raw);
     }
 
-    private static ToolDefinitions.Type parseType(ServerCommandSource source, String raw) {
+    private static ToolDefinitions.Type parseType(String raw) {
         return ToolDefinitions.Type.fromId(raw);
     }
 
@@ -250,12 +252,5 @@ public final class AmethystToolsFabric implements ModInitializer {
 
     private static String format(String template, String material, String tool, String playerName) {
         return template.replace("{material}", material).replace("{tool}", tool).replace("{player}", playerName);
-    }
-
-    private static SuggestionsBuilder suggest(SuggestionsBuilder builder, Iterable<String> values) {
-        for (String value : values) {
-            builder.suggest(value);
-        }
-        return builder;
     }
 }
