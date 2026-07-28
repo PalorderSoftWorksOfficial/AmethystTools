@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "amethysttools",
+  "version": "${version}",
+  "name": "AmethystTools",
+  "description": "A Fabric port of the AmethystTools 3x3 mining tools mod.",
+  "authors": ["RodinToprak"],
+  "contact": {
+    "homepage": "https://github.com/PalorderSoftWorksOfficial/AmethystTools"
+  },
+  "license": "All Rights Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.rtc.amethystTools.AmethystToolsFabric"]
+  },
+  "depends": {
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabricloader": ">=0.18.1",
+    "fabric-api": "*"
+  }
+}
