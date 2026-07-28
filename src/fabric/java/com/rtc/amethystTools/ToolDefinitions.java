@@ -60,7 +60,7 @@ public final class ToolDefinitions {
         }
 
         public String menuKey() {
-            return "menus." + id;
+            return "menus.menu-" + id;
         }
 
         public static Tier fromId(String raw) {
@@ -112,7 +112,7 @@ public final class ToolDefinitions {
         }
 
         public String menuKey() {
-            return "item." + id;
+            return "item.item-" + id;
         }
 
         public static Type fromId(String raw) {
@@ -145,19 +145,19 @@ public final class ToolDefinitions {
     }
 
     public static ItemStack createBackIcon(AmethystToolConfig config) {
-        return namedStack(Items.ARROW, config.get("menus.back", "Previous Page"), Formatting.YELLOW);
+        return namedStack(Items.ARROW, config.get("menus.item-previous", "Previous Page"), Formatting.YELLOW);
     }
 
     public static ItemStack createToolStack(AmethystToolConfig config, Tier tier, Type type) {
         ItemStack stack = new ItemStack(toolItem(tier, type));
-        String prefix = config.get("item.name", "Amethyst");
+        String prefix = config.get("item.item-name", "Amethyst");
         stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(prefix + " " + tier.displayName() + " " + type.displayName()).formatted(Formatting.DARK_PURPLE));
 
         NbtCompound data = new NbtCompound();
         data.putBoolean(TOOL_FLAG, true);
         data.putString(TIER_KEY, tier.id());
         data.putString(TYPE_KEY, type.id());
-        NbtComponent.set(DataComponentTypes.CUSTOM_DATA, stack, data);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
         return stack;
     }
 
