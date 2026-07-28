@@ -269,9 +269,10 @@ public final class AmethystToolsFabric implements ModInitializer {
     private static void sendChatAndActionBar(ServerCommandSource source, String text, boolean actionBar) {
         if (source.getEntity() instanceof ServerPlayerEntity player) {
             player.sendMessage(Text.literal(text), actionBar);
-        } else {
-            source.sendMessage(Text.literal(text));
+            return;
         }
+
+        source.sendFeedback(() -> Text.literal(text), false);
     }
 
     private static String message(String key, String fallback) {
