@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.rtc'
-version = '1.4-fabric-1.21.11'
+version = '1.4'
 
 base {
     archivesName = 'AmethystTools'
