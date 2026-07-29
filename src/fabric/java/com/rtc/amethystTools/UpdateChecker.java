@@ -54,11 +54,11 @@ public final class UpdateChecker {
             latestVersion = body.substring(start, end);
 
             if (isUpdateAvailable(currentVersion, latestVersion)) {
-                server.getLogger().warning("There is a newer plugin version available: " + latestVersion + ", you're on: " + currentVersion);
-                server.getLogger().warning("Download link: PLACEHOLDER");
+                System.out.println("There is a newer plugin version available: " + latestVersion + ", you're on: " + currentVersion);
+                System.out.println("Download link: PLACEHOLDER");
             }
         } catch (Exception exception) {
-            server.getLogger().warning("An error occurred during the UpdateChecker check!");
+            System.out.println("An error occurred during the UpdateChecker check!");
         }
     }
 
