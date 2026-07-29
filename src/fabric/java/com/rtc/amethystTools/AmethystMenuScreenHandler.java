@@ -82,8 +82,8 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
 
         serverPlayer.closeHandledScreen();
         serverPlayer.getServer().execute(() -> {
-            switch (kind) {
-                case ROOT -> switch (slotIndex) {
+            if (kind == MenuKind.ROOT) {
+                switch (slotIndex) {
                     case 10 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.WOODEN);
                     case 11 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.STONE);
                     case 12 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.IRON);
@@ -93,19 +93,29 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
                     case 16 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.NETHERITE);
                     default -> {
                     }
-                };
-                case WOODEN -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.WOODEN, slotIndex);
-                case STONE -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.STONE, slotIndex);
-                case IRON -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.IRON, slotIndex);
-                case COPPER -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.COPPER, slotIndex);
-                case GOLDEN -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.GOLDEN, slotIndex);
-                case DIAMOND -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.DIAMOND, slotIndex);
-                case NETHERITE -> handleToolMenu(serverPlayer, ToolDefinitions.Tier.NETHERITE, slotIndex);
+                }
+                return;
             }
+
+            handleToolMenu(serverPlayer, slotIndex);
         });
     }
 
-    private void handleToolMenu(ServerPlayerEntity player, ToolDefinitions.Tier tier, int slotIndex) {
+    private void handleToolMenu(ServerPlayerEntity player, int slotIndex) {
+        switch (kind) {
+            case WOODEN -> handleTierMenu(player, ToolDefinitions.Tier.WOODEN, slotIndex);
+            case STONE -> handleTierMenu(player, ToolDefinitions.Tier.STONE, slotIndex);
+            case IRON -> handleTierMenu(player, ToolDefinitions.Tier.IRON, slotIndex);
+            case COPPER -> handleTierMenu(player, ToolDefinitions.Tier.COPPER, slotIndex);
+            case GOLDEN -> handleTierMenu(player, ToolDefinitions.Tier.GOLDEN, slotIndex);
+            case DIAMOND -> handleTierMenu(player, ToolDefinitions.Tier.DIAMOND, slotIndex);
+            case NETHERITE -> handleTierMenu(player, ToolDefinitions.Tier.NETHERITE, slotIndex);
+            default -> {
+            }
+        }
+    }
+
+    private void handleTierMenu(ServerPlayerEntity player, ToolDefinitions.Tier tier, int slotIndex) {
         switch (slotIndex) {
             case 12 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.PICKAXE);
             case 13 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.SHOVEL);
