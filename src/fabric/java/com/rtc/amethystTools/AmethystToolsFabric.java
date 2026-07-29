@@ -1,6 +1,7 @@
 package com.palordersoftworks.amethysttools;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -8,7 +9,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.StringArgumentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
@@ -35,7 +35,7 @@ public final class AmethystToolsFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> UPDATE_CHECKER.checkAsync(server));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.player;
-            if (!player.hasPermissionLevel(2)) {
+            if (!isAdmin(player)) {
                 return;
             }
             String latestVersion = UPDATE_CHECKER.latestVersion;
@@ -60,11 +60,11 @@ public final class AmethystToolsFabric implements ModInitializer {
                                 .executes(AmethystToolsFabric::giveSelfCommand))));
 
         dispatcher.register(literal("amethysttoolsreload")
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(AmethystToolsFabric::isAdminSource)
                 .executes(AmethystToolsFabric::reloadCommand));
 
         dispatcher.register(literal("amethysttoolsgive")
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(AmethystToolsFabric::isAdminSource)
                 .executes(AmethystToolsFabric::showGiveUsage)
                 .then(argument("player", StringArgumentType.word())
                         .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(player -> player.getGameProfile().getName()).toList(), builder))
@@ -75,6 +75,14 @@ public final class AmethystToolsFabric implements ModInitializer {
                                 .then(argument("type", StringArgumentType.word())
                                         .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
                                         .executes(AmethystToolsFabric::giveTargetCommand)))));
+    }
+
+    private static boolean isAdminSource(ServerCommandSource source) {
+        return source.getEntity() instanceof ServerPlayerEntity player && player.isCreativeLevelTwoOp();
+    }
+
+    private static boolean isAdmin(ServerPlayerEntity player) {
+        return player != null && player.isCreativeLevelTwoOp();
     }
 
     private static int showGiveUsage(CommandContext<ServerCommandSource> context) {
@@ -211,7 +219,7 @@ public final class AmethystToolsFabric implements ModInitializer {
         if (target.getInventory().getEmptySlot() == -1) {
             String material = tier.displayName();
             String tool = type.displayName();
-            String text = format(message("messages.invfull", "{material} {tool} could not be added to your inventory because it is full."), material, tool, target.getGameProfile().getName());
+            String text = format(message("messages.invfull", "{material} {tool} could not be added to your inventory because it is full."), material, tool, "");
             sendChatAndActionBar(target, text, true);
             return false;
         }
