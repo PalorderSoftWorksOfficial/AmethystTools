@@ -11,7 +11,7 @@
   "license": "All Rights Reserved",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.rtc.amethystTools.AmethystToolsFabric"]
+    "main": ["com.palordersoftworks.amethysttools.AmethystToolsFabric"]
   },
   "depends": {
     "minecraft": "1.21.11",
