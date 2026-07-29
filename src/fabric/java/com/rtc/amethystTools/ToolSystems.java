@@ -1,4 +1,4 @@
-package com.rtc.amethystTools;
+package com.palordersoftworks.amethysttools;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
