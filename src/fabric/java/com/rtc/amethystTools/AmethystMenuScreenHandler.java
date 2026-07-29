@@ -1,4 +1,4 @@
-package com.rtc.amethystTools;
+package com.palordersoftworks.amethysttools;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
