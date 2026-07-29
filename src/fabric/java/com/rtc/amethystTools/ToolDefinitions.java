@@ -172,7 +172,7 @@ public final class ToolDefinitions {
         }
 
         NbtCompound data = customData.copyNbt();
-        return data.getBoolean(TOOL_FLAG);
+        return data.getBoolean(TOOL_FLAG).orElse(false);
     }
 
     public static String signature(ItemStack stack) {
