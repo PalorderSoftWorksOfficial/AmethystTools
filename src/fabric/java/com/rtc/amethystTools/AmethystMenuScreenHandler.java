@@ -81,24 +81,22 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
         }
 
         serverPlayer.closeHandledScreen();
-        serverPlayer.getServer().execute(() -> {
-            if (kind == MenuKind.ROOT) {
-                switch (slotIndex) {
-                    case 10 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.WOODEN);
-                    case 11 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.STONE);
-                    case 12 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.IRON);
-                    case 13 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.COPPER);
-                    case 14 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.GOLDEN);
-                    case 15 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.DIAMOND);
-                    case 16 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.NETHERITE);
-                    default -> {
-                    }
+        if (kind == MenuKind.ROOT) {
+            switch (slotIndex) {
+                case 10 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.WOODEN);
+                case 11 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.STONE);
+                case 12 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.IRON);
+                case 13 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.COPPER);
+                case 14 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.GOLDEN);
+                case 15 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.DIAMOND);
+                case 16 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.NETHERITE);
+                default -> {
                 }
-                return;
             }
+            return;
+        }
 
-            handleToolMenu(serverPlayer, slotIndex);
-        });
+        handleToolMenu(serverPlayer, slotIndex);
     }
 
     private void handleToolMenu(ServerPlayerEntity player, int slotIndex) {
