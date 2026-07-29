@@ -1,4 +1,4 @@
-package com.rtc.amethystTools;
+package com.palordersoftworks.amethysttools;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
@@ -16,7 +16,7 @@ public final class UpdateChecker {
         this.currentVersion = FabricLoader.getInstance()
                 .getModContainer("amethysttools")
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
-                .orElse("1.4-fabric-1.21.11");
+                .orElse("1.4");
     }
 
     public void checkAsync(MinecraftServer server) {
@@ -55,7 +55,7 @@ public final class UpdateChecker {
 
             if (isUpdateAvailable(currentVersion, latestVersion)) {
                 server.getLogger().warning("There is a newer plugin version available: " + latestVersion + ", you're on: " + currentVersion);
-                server.getLogger().warning("Go to its page to download: https://modrinth.com/plugin/amethystools/versions");
+                server.getLogger().warning("Download link: PLACEHOLDER");
             }
         } catch (Exception exception) {
             server.getLogger().warning("An error occurred during the UpdateChecker check!");
