@@ -1,4 +1,4 @@
-package com.rtc.amethystTools;
+package com.palordersoftworks.amethysttools;
 
 import net.fabricmc.loader.api.FabricLoader;
 
