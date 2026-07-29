@@ -1,4 +1,4 @@
-package com.rtc.amethystTools;
+package com.palordersoftworks.amethysttools;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -16,8 +16,6 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -47,11 +45,7 @@ public final class AmethystToolsFabric implements ModInitializer {
 
             String prefix = "[AmethystTools]";
             player.sendMessage(Text.literal(prefix + " There is a newer plugin version available: " + latestVersion + ", you're on: " + UPDATE_CHECKER.currentVersion).formatted(Formatting.LIGHT_PURPLE), false);
-            player.sendMessage(Text.literal(prefix + " Click here to download the new version.")
-                    .formatted(Formatting.LIGHT_PURPLE)
-                    .styled(style -> style
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://modrinth.com/plugin/amethystools/versions"))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to go to the Modrinth download page.")))) , false);
+            player.sendMessage(Text.literal(prefix + " Download link: PLACEHOLDER").formatted(Formatting.LIGHT_PURPLE), false);
         });
     }
 
