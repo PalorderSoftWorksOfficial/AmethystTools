@@ -68,14 +68,14 @@ public final class AmethystToolsFabric implements ModInitializer {
                 .executes(AmethystToolsFabric::showGiveUsage)
                 .then(argument("player", StringArgumentType.word())
                         .suggests((context, builder) -> CommandSource.suggestMatching(
-                                context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(ServerPlayerEntity::getEntityName),
+                                (Iterable<String>) context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(ServerPlayerEntity::getName),
                                 builder))
                         .executes(AmethystToolsFabric::needTierForTarget)
                         .then(argument("tier", StringArgumentType.word())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.tierIds(), builder))
+                                .suggests((context, builder) -> CommandSource.suggestMatching(com.palordersoftworks.amethysttools.ToolDefinitions.tierIds(), builder))
                                 .executes(AmethystToolsFabric::needTypeForTarget)
                                 .then(argument("type", StringArgumentType.word())
-                                        .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
+                                        .suggests((context, builder) -> CommandSource.suggestMatching(com.palordersoftworks.amethysttools.ToolDefinitions.typeIds(), builder))
                                         .executes(AmethystToolsFabric::giveTargetCommand)))));
     }
 
