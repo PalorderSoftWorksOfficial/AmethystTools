@@ -67,7 +67,9 @@ public final class AmethystToolsFabric implements ModInitializer {
                 .requires(AmethystToolsFabric::isAdminSource)
                 .executes(AmethystToolsFabric::showGiveUsage)
                 .then(argument("player", StringArgumentType.word())
-                        .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(player -> player.getGameProfile().getName()).toList(), builder))
+                        .suggests((context, builder) -> CommandSource.suggestMatching(
+                                context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(ServerPlayerEntity::getEntityName),
+                                builder))
                         .executes(AmethystToolsFabric::needTierForTarget)
                         .then(argument("tier", StringArgumentType.word())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.tierIds(), builder))
