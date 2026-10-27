@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "amethysttools:blocks",
+    "amethysttools:veinminer",
+    "amethysttools:depth",
+    "amethysttools:resonance",
+    "amethysttools:experience"
+  ]
+}

@@ -7,22 +7,23 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.CommandSource;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.item.ItemStack;
 
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 
 public final class AmethystToolsFabric implements ModInitializer {
+    public static final String MOD_ID = "amethysttools";
     public static final AmethystToolConfig CONFIG = new AmethystToolConfig("amethysttools.properties");
     public static final UpdateChecker UPDATE_CHECKER = new UpdateChecker();
     private static final ToolSystems SYSTEMS = new ToolSystems();
@@ -34,7 +35,7 @@ public final class AmethystToolsFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(AmethystToolsFabric::registerCommands);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> UPDATE_CHECKER.checkAsync(server));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity player = handler.player;
+            ServerPlayer player = handler.getPlayer();
             if (!isAdmin(player)) {
                 return;
             }
@@ -44,19 +45,20 @@ public final class AmethystToolsFabric implements ModInitializer {
             }
 
             String prefix = "[AmethystTools]";
-            player.sendMessage(Text.literal(prefix + " There is a newer plugin version available: " + latestVersion + ", you're on: " + UPDATE_CHECKER.currentVersion).formatted(Formatting.LIGHT_PURPLE), false);
-            player.sendMessage(Text.literal(prefix + " Download link: PLACEHOLDER").formatted(Formatting.LIGHT_PURPLE), false);
+            player.sendSystemMessage(Component.literal(prefix + " There is a newer plugin version available: " + latestVersion + ", you're on: " + UPDATE_CHECKER.currentVersion).withStyle(ChatFormatting.LIGHT_PURPLE));
+            player.sendSystemMessage(Component.literal(prefix + " Download link: PLACEHOLDER").withStyle(ChatFormatting.LIGHT_PURPLE));
         });
     }
 
-    private static void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
+    private static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext registryAccess, Commands.CommandSelection environment) {
         dispatcher.register(literal("amethysttools")
                 .executes(AmethystToolsFabric::openMenuCommand)
+                .requires(AmethystToolsFabric::isAdminSource)
                 .then(argument("tier", StringArgumentType.word())
-                        .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.tierIds(), builder))
+                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(ToolDefinitions.tierIds(), builder))
                         .executes(AmethystToolsFabric::tierOnlyCommand)
                         .then(argument("type", StringArgumentType.word())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(ToolDefinitions.typeIds(), builder))
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(ToolDefinitions.typeIds(), builder))
                                 .executes(AmethystToolsFabric::giveSelfCommand))));
 
         dispatcher.register(literal("amethysttoolsreload")
@@ -67,60 +69,60 @@ public final class AmethystToolsFabric implements ModInitializer {
                 .requires(AmethystToolsFabric::isAdminSource)
                 .executes(AmethystToolsFabric::showGiveUsage)
                 .then(argument("player", StringArgumentType.word())
-                        .suggests((context, builder) -> CommandSource.suggestMatching(
-                                (Iterable<String>) context.getSource().getServer().getPlayerManager().getPlayerList().stream().map(ServerPlayerEntity::getName),
+                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                context.getSource().getServer().getPlayerList().getPlayers().stream().map(player -> player.getName().getString()).toList(),
                                 builder))
                         .executes(AmethystToolsFabric::needTierForTarget)
                         .then(argument("tier", StringArgumentType.word())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(com.palordersoftworks.amethysttools.ToolDefinitions.tierIds(), builder))
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(ToolDefinitions.tierIds(), builder))
                                 .executes(AmethystToolsFabric::needTypeForTarget)
                                 .then(argument("type", StringArgumentType.word())
-                                        .suggests((context, builder) -> CommandSource.suggestMatching(com.palordersoftworks.amethysttools.ToolDefinitions.typeIds(), builder))
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(ToolDefinitions.typeIds(), builder))
                                         .executes(AmethystToolsFabric::giveTargetCommand)))));
     }
 
-    private static boolean isAdminSource(ServerCommandSource source) {
-        return source.getEntity() instanceof ServerPlayerEntity player && player.isCreativeLevelTwoOp();
+    private static boolean isAdminSource(CommandSourceStack source) {
+        return source.getEntity() instanceof ServerPlayer player && player.canUseGameMasterBlocks();
     }
 
-    private static boolean isAdmin(ServerPlayerEntity player) {
-        return player != null && player.isCreativeLevelTwoOp();
+    private static boolean isAdmin(ServerPlayer player) {
+        return player != null && player.canUseGameMasterBlocks();
     }
 
-    private static int showGiveUsage(CommandContext<ServerCommandSource> context) {
+    private static int showGiveUsage(CommandContext<CommandSourceStack> context) {
         String text = message("messages.use-give", "Use: /amethysttoolsgive <player> <tier> <type>");
         sendChatAndActionBar(context.getSource(), text, true);
         return 1;
     }
 
-    private static int openMenuCommand(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity player = requirePlayer(context.getSource());
+    private static int openMenuCommand(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = requirePlayer(context.getSource());
         if (player == null) {
             return 0;
         }
 
         openMenu(player, AmethystMenuScreenHandler.MenuKind.ROOT);
-        player.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0F, 1.0F);
+        player.playSound(SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 1.0F);
         return 1;
     }
 
-    private static int tierOnlyCommand(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity player = requirePlayer(context.getSource());
+    private static int tierOnlyCommand(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = requirePlayer(context.getSource());
         if (player == null) {
             return 0;
         }
 
         String tierInput = StringArgumentType.getString(context, "tier").toLowerCase();
         if (ToolDefinitions.Tier.fromId(tierInput) != null) {
-            sendChatAndActionBar(player, message("messages.empty-arg2", "Please enter a tool type (pickaxe, axe, shovel)."), true);
+            sendChatAndActionBar(player, message("messages.empty-arg2", "Please enter a tool type (pickaxe, axe, shovel, hoe, sword)."), true);
         } else {
             sendChatAndActionBar(player, message("messages.wrong-material", "Please enter a valid material."), true);
         }
         return 1;
     }
 
-    private static int giveSelfCommand(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity player = requirePlayer(context.getSource());
+    private static int giveSelfCommand(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = requirePlayer(context.getSource());
         if (player == null) {
             return 0;
         }
@@ -140,25 +142,25 @@ public final class AmethystToolsFabric implements ModInitializer {
         return giveTool(player, tier, type) ? 1 : 0;
     }
 
-    private static int reloadCommand(CommandContext<ServerCommandSource> context) {
-        ServerCommandSource source = context.getSource();
+    private static int reloadCommand(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
         try {
             CONFIG.load();
-            if (source.getEntity() instanceof ServerPlayerEntity player) {
+            if (source.getEntity() instanceof ServerPlayer player) {
                 sendChatAndActionBar(player, message("messages.reloadplugin", "Plugin reload is succesfuly complete."), true);
             } else {
-                source.sendFeedback(() -> Text.literal(message("messages.reloadplugin", "Plugin reload is succesfuly complete.")), false);
+                source.sendSuccess(() -> Component.literal(message("messages.reloadplugin", "Plugin reload is succesfuly complete.")), false);
             }
             return 1;
         } catch (RuntimeException exception) {
-            source.sendError(Text.literal(exception.getMessage() == null ? "Reload failed." : exception.getMessage()));
+            source.sendFailure(Component.literal(exception.getMessage() == null ? "Reload failed." : exception.getMessage()));
             return 0;
         }
     }
 
-    private static int needTierForTarget(CommandContext<ServerCommandSource> context) {
+    private static int needTierForTarget(CommandContext<CommandSourceStack> context) {
         String playerName = StringArgumentType.getString(context, "player");
-        ServerPlayerEntity target = resolveTarget(context.getSource(), playerName);
+        ServerPlayer target = resolveTarget(context.getSource(), playerName);
         if (target == null) {
             sendChatAndActionBar(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", playerName), true);
             return 0;
@@ -168,9 +170,9 @@ public final class AmethystToolsFabric implements ModInitializer {
         return 1;
     }
 
-    private static int needTypeForTarget(CommandContext<ServerCommandSource> context) {
+    private static int needTypeForTarget(CommandContext<CommandSourceStack> context) {
         String playerName = StringArgumentType.getString(context, "player");
-        ServerPlayerEntity target = resolveTarget(context.getSource(), playerName);
+        ServerPlayer target = resolveTarget(context.getSource(), playerName);
         if (target == null) {
             sendChatAndActionBar(context.getSource(), format(message("messages.player-notfound", "{player} not found."), "", "", playerName), true);
             return 0;
@@ -182,14 +184,14 @@ public final class AmethystToolsFabric implements ModInitializer {
             return 0;
         }
 
-        sendChatAndActionBar(context.getSource(), message("messages.empty-arg2", "Please enter a tool type (pickaxe, axe, shovel)."), false);
+        sendChatAndActionBar(context.getSource(), message("messages.empty-arg2", "Please enter a tool type (pickaxe, axe, shovel, hoe, sword)."), false);
         return 1;
     }
 
-    private static int giveTargetCommand(CommandContext<ServerCommandSource> context) {
-        ServerCommandSource source = context.getSource();
+    private static int giveTargetCommand(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
         String playerName = StringArgumentType.getString(context, "player");
-        ServerPlayerEntity target = resolveTarget(source, playerName);
+        ServerPlayer target = resolveTarget(source, playerName);
         if (target == null) {
             sendChatAndActionBar(source, format(message("messages.player-notfound", "{player} not found."), "", "", playerName), true);
             return 0;
@@ -211,14 +213,14 @@ public final class AmethystToolsFabric implements ModInitializer {
         return 1;
     }
 
-    public static void openMenu(ServerPlayerEntity player, AmethystMenuScreenHandler.MenuKind kind) {
-        Text title = Text.literal(menuTitle(kind));
-        NamedScreenHandlerFactory factory = new SimpleNamedScreenHandlerFactory((syncId, inventory, ignoredPlayer) -> new AmethystMenuScreenHandler(syncId, inventory, kind), title);
-        player.openHandledScreen(factory);
+    public static void openMenu(ServerPlayer player, AmethystMenuScreenHandler.MenuKind kind) {
+        Component title = Component.literal(menuTitle(kind));
+        MenuProvider factory = new SimpleMenuProvider((syncId, inventory, ignoredPlayer) -> new AmethystMenuScreenHandler(syncId, inventory, kind), title);
+        player.openMenu(factory);
     }
 
-    public static boolean giveTool(ServerPlayerEntity target, ToolDefinitions.Tier tier, ToolDefinitions.Type type) {
-        if (target.getInventory().getEmptySlot() == -1) {
+    public static boolean giveTool(ServerPlayer target, ToolDefinitions.Tier tier, ToolDefinitions.Type type) {
+        if (target.getInventory().getFreeSlot() == -1) {
             String material = tier.displayName();
             String tool = type.displayName();
             String text = format(message("messages.invfull", "{material} {tool} could not be added to your inventory because it is full."), material, tool, "");
@@ -227,22 +229,22 @@ public final class AmethystToolsFabric implements ModInitializer {
         }
 
         ItemStack stack = ToolDefinitions.createToolStack(CONFIG, tier, type);
-        target.giveItemStack(stack);
-        target.playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1.0F, 2.0F);
+        target.getInventory().add(stack);
+        target.playSound(SoundEvents.ITEM_PICKUP, 1.0F, 2.0F);
         return true;
     }
 
-    private static ServerPlayerEntity requirePlayer(ServerCommandSource source) {
-        if (source.getEntity() instanceof ServerPlayerEntity player) {
+    private static ServerPlayer requirePlayer(CommandSourceStack source) {
+        if (source.getEntity() instanceof ServerPlayer player) {
             return player;
         }
 
-        source.sendError(Text.literal(message("messages.only-players", "Only players can use this command.")));
+        source.sendFailure(Component.literal(message("messages.only-players", "Only players can use this command.")));
         return null;
     }
 
-    private static ServerPlayerEntity resolveTarget(ServerCommandSource source, String playerName) {
-        return source.getServer().getPlayerManager().getPlayer(playerName);
+    private static ServerPlayer resolveTarget(CommandSourceStack source, String playerName) {
+        return source.getServer().getPlayerList().getPlayer(playerName);
     }
 
     private static ToolDefinitions.Tier parseTier(String raw) {
@@ -266,17 +268,17 @@ public final class AmethystToolsFabric implements ModInitializer {
         };
     }
 
-    private static void sendChatAndActionBar(ServerPlayerEntity player, String text, boolean actionBar) {
-        player.sendMessage(Text.literal(text), actionBar);
+    private static void sendChatAndActionBar(ServerPlayer player, String text, boolean actionBar) {
+        player.sendSystemMessage(Component.literal(text), actionBar);
     }
 
-    private static void sendChatAndActionBar(ServerCommandSource source, String text, boolean actionBar) {
-        if (source.getEntity() instanceof ServerPlayerEntity player) {
-            player.sendMessage(Text.literal(text), actionBar);
+    private static void sendChatAndActionBar(CommandSourceStack source, String text, boolean actionBar) {
+        if (source.getEntity() instanceof ServerPlayer player) {
+            player.sendSystemMessage(Component.literal(text), actionBar);
             return;
         }
 
-        source.sendFeedback(() -> Text.literal(text), false);
+        source.sendSuccess(() -> Component.literal(text), false);
     }
 
     private static String message(String key, String fallback) {

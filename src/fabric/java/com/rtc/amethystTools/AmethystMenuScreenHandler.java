@@ -1,15 +1,15 @@
 package com.palordersoftworks.amethysttools;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
 
-public final class AmethystMenuScreenHandler extends GenericContainerScreenHandler {
+public final class AmethystMenuScreenHandler extends ChestMenu {
     public enum MenuKind {
         ROOT,
         WOODEN,
@@ -21,66 +21,68 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
         NETHERITE
     }
 
-    private final SimpleInventory inventory;
+    private final SimpleContainer inventory;
     private final MenuKind kind;
 
-    public AmethystMenuScreenHandler(int syncId, PlayerInventory playerInventory, MenuKind kind) {
-        this(syncId, playerInventory, new SimpleInventory(27), kind);
+    public AmethystMenuScreenHandler(int syncId, Inventory playerInventory, MenuKind kind) {
+        this(syncId, playerInventory, new SimpleContainer(27), kind);
     }
 
-    private AmethystMenuScreenHandler(int syncId, PlayerInventory playerInventory, SimpleInventory inventory, MenuKind kind) {
-        super(ScreenHandlerType.GENERIC_9X3, syncId, playerInventory, inventory, 3);
+    private AmethystMenuScreenHandler(int syncId, Inventory playerInventory, SimpleContainer inventory, MenuKind kind) {
+        super(MenuType.GENERIC_9x3, syncId, playerInventory, inventory, 3);
         this.inventory = inventory;
         this.kind = kind;
         populate();
     }
 
     private void populate() {
-        inventory.clear();
+        inventory.clearContent();
 
         if (kind == MenuKind.ROOT) {
-            inventory.setStack(10, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.WOODEN));
-            inventory.setStack(11, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.STONE));
-            inventory.setStack(12, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.IRON));
-            inventory.setStack(13, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.COPPER));
-            inventory.setStack(14, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.GOLDEN));
-            inventory.setStack(15, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.DIAMOND));
-            inventory.setStack(16, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.NETHERITE));
+            inventory.setItem(10, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.WOODEN));
+            inventory.setItem(11, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.STONE));
+            inventory.setItem(12, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.IRON));
+            inventory.setItem(13, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.COPPER));
+            inventory.setItem(14, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.GOLDEN));
+            inventory.setItem(15, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.DIAMOND));
+            inventory.setItem(16, ToolDefinitions.createTierIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Tier.NETHERITE));
             return;
         }
 
-        inventory.setStack(12, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.PICKAXE));
-        inventory.setStack(13, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.SHOVEL));
-        inventory.setStack(14, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.AXE));
-        inventory.setStack(18, ToolDefinitions.createBackIcon(AmethystToolsFabric.CONFIG));
+        inventory.setItem(11, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.PICKAXE));
+        inventory.setItem(12, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.SHOVEL));
+        inventory.setItem(13, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.AXE));
+        inventory.setItem(14, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.HOE));
+        inventory.setItem(15, ToolDefinitions.createTypeIcon(AmethystToolsFabric.CONFIG, ToolDefinitions.Type.SWORD));
+        inventory.setItem(18, ToolDefinitions.createBackIcon(AmethystToolsFabric.CONFIG));
     }
 
     @Override
-    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
-        if (slotIndex >= 0 && slotIndex < inventory.size()) {
+    public void clicked(int slotIndex, int button, ContainerInput actionType, Player player) {
+        if (slotIndex >= 0 && slotIndex < inventory.getContainerSize()) {
             handleClick(player, slotIndex);
             return;
         }
 
-        super.onSlotClick(slotIndex, button, actionType, player);
+        super.clicked(slotIndex, button, actionType, player);
     }
 
     @Override
-    public ItemStack quickMove(PlayerEntity player, int slot) {
+    public ItemStack quickMoveStack(Player player, int slot) {
         return ItemStack.EMPTY;
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
+    public boolean stillValid(Player player) {
         return true;
     }
 
-    private void handleClick(PlayerEntity player, int slotIndex) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+    private void handleClick(Player player, int slotIndex) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
 
-        serverPlayer.closeHandledScreen();
+        serverPlayer.closeContainer();
         if (kind == MenuKind.ROOT) {
             switch (slotIndex) {
                 case 10 -> AmethystToolsFabric.openMenu(serverPlayer, MenuKind.WOODEN);
@@ -99,7 +101,7 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
         handleToolMenu(serverPlayer, slotIndex);
     }
 
-    private void handleToolMenu(ServerPlayerEntity player, int slotIndex) {
+    private void handleToolMenu(ServerPlayer player, int slotIndex) {
         switch (kind) {
             case WOODEN -> handleTierMenu(player, ToolDefinitions.Tier.WOODEN, slotIndex);
             case STONE -> handleTierMenu(player, ToolDefinitions.Tier.STONE, slotIndex);
@@ -113,11 +115,13 @@ public final class AmethystMenuScreenHandler extends GenericContainerScreenHandl
         }
     }
 
-    private void handleTierMenu(ServerPlayerEntity player, ToolDefinitions.Tier tier, int slotIndex) {
+    private void handleTierMenu(ServerPlayer player, ToolDefinitions.Tier tier, int slotIndex) {
         switch (slotIndex) {
-            case 12 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.PICKAXE);
-            case 13 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.SHOVEL);
-            case 14 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.AXE);
+            case 11 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.PICKAXE);
+            case 12 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.SHOVEL);
+            case 13 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.AXE);
+            case 14 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.HOE);
+            case 15 -> AmethystToolsFabric.giveTool(player, tier, ToolDefinitions.Type.SWORD);
             case 18 -> AmethystToolsFabric.openMenu(player, MenuKind.ROOT);
             default -> {
             }

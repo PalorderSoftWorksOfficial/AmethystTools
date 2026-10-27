@@ -38,6 +38,35 @@ public final class AmethystToolConfig {
         return properties.getProperty(key, fallback);
     }
 
+    public synchronized int getInt(String key, int fallback) {
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return fallback;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+
+    public synchronized boolean getBoolean(String key, boolean fallback) {
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return fallback;
+        }
+
+        String normalized = value.trim();
+        if (normalized.equalsIgnoreCase("true") || normalized.equals("1") || normalized.equalsIgnoreCase("yes")) {
+            return true;
+        }
+        if (normalized.equalsIgnoreCase("false") || normalized.equals("0") || normalized.equalsIgnoreCase("no")) {
+            return false;
+        }
+        return fallback;
+    }
+
     public synchronized void save() {
         try (OutputStream outputStream = Files.newOutputStream(path)) {
             properties.store(outputStream, "AmethystTools");

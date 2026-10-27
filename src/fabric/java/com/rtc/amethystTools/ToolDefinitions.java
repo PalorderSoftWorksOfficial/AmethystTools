@@ -1,14 +1,14 @@
 package com.palordersoftworks.amethysttools;
 
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,20 +23,20 @@ public final class ToolDefinitions {
     }
 
     public enum Tier {
-        WOODEN("wooden", "Wooden", Items.OAK_PLANKS, Formatting.GOLD),
-        STONE("stone", "Stone", Items.STONE, Formatting.GRAY),
-        IRON("iron", "Iron", Items.IRON_INGOT, Formatting.WHITE),
-        COPPER("copper", "Copper", Items.COPPER_INGOT, Formatting.GOLD),
-        GOLDEN("golden", "Golden", Items.GOLD_INGOT, Formatting.YELLOW),
-        DIAMOND("diamond", "Diamond", Items.DIAMOND, Formatting.AQUA),
-        NETHERITE("netherite", "Netherite", Items.NETHERITE_INGOT, Formatting.DARK_GRAY);
+        WOODEN("wooden", "Wooden", Items.OAK_PLANKS, ChatFormatting.GOLD),
+        STONE("stone", "Stone", Items.STONE, ChatFormatting.GRAY),
+        IRON("iron", "Iron", Items.IRON_INGOT, ChatFormatting.WHITE),
+        COPPER("copper", "Copper", Items.COPPER_INGOT, ChatFormatting.GOLD),
+        GOLDEN("golden", "Golden", Items.GOLD_INGOT, ChatFormatting.YELLOW),
+        DIAMOND("diamond", "Diamond", Items.DIAMOND, ChatFormatting.AQUA),
+        NETHERITE("netherite", "Netherite", Items.NETHERITE_INGOT, ChatFormatting.DARK_GRAY);
 
         private final String id;
         private final String displayName;
         private final Item iconItem;
-        private final Formatting formatting;
+        private final ChatFormatting formatting;
 
-        Tier(String id, String displayName, Item iconItem, Formatting formatting) {
+        Tier(String id, String displayName, Item iconItem, ChatFormatting formatting) {
             this.id = id;
             this.displayName = displayName;
             this.iconItem = iconItem;
@@ -55,7 +55,7 @@ public final class ToolDefinitions {
             return iconItem;
         }
 
-        public Formatting formatting() {
+        public ChatFormatting formatting() {
             return formatting;
         }
 
@@ -79,16 +79,18 @@ public final class ToolDefinitions {
     }
 
     public enum Type {
-        PICKAXE("pickaxe", "Pickaxe", Items.WOODEN_PICKAXE, Formatting.AQUA),
-        SHOVEL("shovel", "Shovel", Items.WOODEN_SHOVEL, Formatting.GREEN),
-        AXE("axe", "Axe", Items.WOODEN_AXE, Formatting.RED);
+        PICKAXE("pickaxe", "Pickaxe", Items.WOODEN_PICKAXE, ChatFormatting.AQUA),
+        SHOVEL("shovel", "Shovel", Items.WOODEN_SHOVEL, ChatFormatting.GREEN),
+        AXE("axe", "Axe", Items.WOODEN_AXE, ChatFormatting.RED),
+        HOE("hoe", "Hoe", Items.WOODEN_HOE, ChatFormatting.YELLOW),
+        SWORD("sword", "Sword", Items.WOODEN_SWORD, ChatFormatting.LIGHT_PURPLE);
 
         private final String id;
         private final String displayName;
         private final Item iconItem;
-        private final Formatting formatting;
+        private final ChatFormatting formatting;
 
-        Type(String id, String displayName, Item iconItem, Formatting formatting) {
+        Type(String id, String displayName, Item iconItem, ChatFormatting formatting) {
             this.id = id;
             this.displayName = displayName;
             this.iconItem = iconItem;
@@ -107,7 +109,7 @@ public final class ToolDefinitions {
             return iconItem;
         }
 
-        public Formatting formatting() {
+        public ChatFormatting formatting() {
             return formatting;
         }
 
@@ -121,6 +123,8 @@ public final class ToolDefinitions {
                 case "pickaxe" -> PICKAXE;
                 case "shovel" -> SHOVEL;
                 case "axe" -> AXE;
+                case "hoe" -> HOE;
+                case "sword" -> SWORD;
                 default -> null;
             };
         }
@@ -145,19 +149,19 @@ public final class ToolDefinitions {
     }
 
     public static ItemStack createBackIcon(AmethystToolConfig config) {
-        return namedStack(Items.ARROW, config.get("menus.item-previous", "Previous Page"), Formatting.YELLOW);
+        return namedStack(Items.ARROW, config.get("menus.item-previous", "Previous Page"), ChatFormatting.YELLOW);
     }
 
     public static ItemStack createToolStack(AmethystToolConfig config, Tier tier, Type type) {
         ItemStack stack = new ItemStack(toolItem(tier, type));
         String prefix = config.get("item.item-name", "Amethyst");
-        stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(prefix + " " + tier.displayName() + " " + type.displayName()).formatted(Formatting.DARK_PURPLE));
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(prefix + " " + tier.displayName() + " " + type.displayName()).withStyle(ChatFormatting.DARK_PURPLE));
 
-        NbtCompound data = new NbtCompound();
+        CompoundTag data = new CompoundTag();
         data.putBoolean(TOOL_FLAG, true);
         data.putString(TIER_KEY, tier.id());
         data.putString(TYPE_KEY, type.id());
-        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
         return stack;
     }
 
@@ -166,13 +170,13 @@ public final class ToolDefinitions {
             return false;
         }
 
-        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData == null || customData.isEmpty()) {
             return false;
         }
 
-        NbtCompound data = customData.copyNbt();
-        return data.getBoolean(TOOL_FLAG).orElse(false);
+        CompoundTag data = customData.copyTag();
+        return data.getBooleanOr(TOOL_FLAG, false);
     }
 
     public static String signature(ItemStack stack) {
@@ -180,18 +184,18 @@ public final class ToolDefinitions {
             return "";
         }
 
-        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData == null) {
-            return Registries.ITEM.getId(stack.getItem()).toString();
+            return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
         }
 
-        NbtCompound data = customData.copyNbt();
-        return Registries.ITEM.getId(stack.getItem()) + ":" + data.getString(TIER_KEY) + ":" + data.getString(TYPE_KEY);
+        CompoundTag data = customData.copyTag();
+        return BuiltInRegistries.ITEM.getKey(stack.getItem()) + ":" + data.getStringOr(TIER_KEY, "") + ":" + data.getStringOr(TYPE_KEY, "");
     }
 
-    private static ItemStack namedStack(Item item, String name, Formatting formatting) {
+    private static ItemStack namedStack(Item item, String name, ChatFormatting formatting) {
         ItemStack stack = new ItemStack(item);
-        stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(name).formatted(formatting));
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(name).withStyle(formatting));
         return stack;
     }
 
@@ -201,36 +205,50 @@ public final class ToolDefinitions {
                 case PICKAXE -> Items.WOODEN_PICKAXE;
                 case SHOVEL -> Items.WOODEN_SHOVEL;
                 case AXE -> Items.WOODEN_AXE;
+                case HOE -> Items.WOODEN_HOE;
+                case SWORD -> Items.WOODEN_SWORD;
             };
             case STONE -> switch (type) {
                 case PICKAXE -> Items.STONE_PICKAXE;
                 case SHOVEL -> Items.STONE_SHOVEL;
                 case AXE -> Items.STONE_AXE;
+                case HOE -> Items.STONE_HOE;
+                case SWORD -> Items.STONE_SWORD;
             };
             case IRON -> switch (type) {
                 case PICKAXE -> Items.IRON_PICKAXE;
                 case SHOVEL -> Items.IRON_SHOVEL;
                 case AXE -> Items.IRON_AXE;
+                case HOE -> Items.IRON_HOE;
+                case SWORD -> Items.IRON_SWORD;
             };
             case COPPER -> switch (type) {
                 case PICKAXE -> Items.COPPER_PICKAXE;
                 case SHOVEL -> Items.COPPER_SHOVEL;
                 case AXE -> Items.COPPER_AXE;
+                case HOE -> Items.COPPER_HOE;
+                case SWORD -> Items.COPPER_SWORD;
             };
             case GOLDEN -> switch (type) {
                 case PICKAXE -> Items.GOLDEN_PICKAXE;
                 case SHOVEL -> Items.GOLDEN_SHOVEL;
                 case AXE -> Items.GOLDEN_AXE;
+                case HOE -> Items.GOLDEN_HOE;
+                case SWORD -> Items.GOLDEN_SWORD;
             };
             case DIAMOND -> switch (type) {
                 case PICKAXE -> Items.DIAMOND_PICKAXE;
                 case SHOVEL -> Items.DIAMOND_SHOVEL;
                 case AXE -> Items.DIAMOND_AXE;
+                case HOE -> Items.DIAMOND_HOE;
+                case SWORD -> Items.DIAMOND_SWORD;
             };
             case NETHERITE -> switch (type) {
                 case PICKAXE -> Items.NETHERITE_PICKAXE;
                 case SHOVEL -> Items.NETHERITE_SHOVEL;
                 case AXE -> Items.NETHERITE_AXE;
+                case HOE -> Items.NETHERITE_HOE;
+                case SWORD -> Items.NETHERITE_SWORD;
             };
         };
     }
